@@ -1,0 +1,26 @@
+<testsuites id="" name="" tests="11" failures="0" skipped="0" errors="0" time="38.649165">
+<testsuite name="smoke.spec.js" timestamp="2025-11-29T14:02:51.226Z" hostname="chromium" tests="11" failures="0" skipped="0" time="34.639" errors="0">
+<testcase name="Farm Expense Tracker - Smoke Tests › should load the app" classname="smoke.spec.js" time="2.893">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should display navigation" classname="smoke.spec.js" time="2.762">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should display dashboard by default" classname="smoke.spec.js" time="2.784">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should navigate to categories page" classname="smoke.spec.js" time="3.794">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should navigate to expenses page" classname="smoke.spec.js" time="3.783">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should navigate to analytics page" classname="smoke.spec.js" time="3.794">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should navigate to milestones page" classname="smoke.spec.js" time="3.77">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should have responsive layout" classname="smoke.spec.js" time="2.76">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should display app title" classname="smoke.spec.js" time="2.765">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should have working buttons" classname="smoke.spec.js" time="2.757">
+</testcase>
+<testcase name="Farm Expense Tracker - Smoke Tests › should not show error messages" classname="smoke.spec.js" time="2.777">
+</testcase>
+</testsuite>
+</testsuites>
