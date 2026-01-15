@@ -1,248 +1,148 @@
 // Local database using localStorage and IndexedDB
 // This module handles all data persistence for the farm tracker
 
-const DB_NAME = 'FarmTrackerDB';
-const DB_VERSION = 2;
+import { getAuthInstance, getFirestoreInstance } from './firebase'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+} from 'firebase/firestore'
 
-// Initialize database
-export const initDB = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+const requireUser = () => {
+  const user = getAuthInstance().currentUser
+  if (!user) throw new Error('Not authenticated')
+  return user
+}
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-
-      // Create object stores
-      if (!db.objectStoreNames.contains('categories')) {
-        db.createObjectStore('categories', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('expenses')) {
-        db.createObjectStore('expenses', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('milestones')) {
-        db.createObjectStore('milestones', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('farmData')) {
-        db.createObjectStore('farmData', { keyPath: 'key' });
-      }
-      if (!db.objectStoreNames.contains('subcategories')) {
-        db.createObjectStore('subcategories', { keyPath: 'id' });
-      }
-    };
-  });
-};
-
-// Get database instance
-let dbInstance = null;
-
-export const getDB = async () => {
-  if (!dbInstance) {
-    dbInstance = await initDB();
+const ensureId = (value, fallbackId) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (!value.id && fallbackId) return { ...value, id: fallbackId }
   }
-  return dbInstance;
-};
+  return value
+}
 
-// CRUD Operations for Categories
+const listFromCollection = async (collectionName) => {
+  const user = requireUser()
+  const firestore = getFirestoreInstance()
+  const snap = await getDocs(collection(firestore, 'users', user.uid, collectionName))
+  return snap.docs.map((d) => ensureId(d.data(), d.id))
+}
+
+const writeDoc = async (collectionName, id, payload) => {
+  const user = requireUser()
+  const firestore = getFirestoreInstance()
+  await setDoc(doc(firestore, 'users', user.uid, collectionName, id), payload)
+}
+
+const deleteDocById = async (collectionName, id) => {
+  const user = requireUser()
+  const firestore = getFirestoreInstance()
+  await deleteDoc(doc(firestore, 'users', user.uid, collectionName, id))
+}
+
+export const initDB = async () => {
+  if (!import.meta.env.VITE_FIREBASE_API_KEY || !import.meta.env.VITE_FIREBASE_PROJECT_ID) {
+    throw new Error('Missing Firebase environment variables')
+  }
+  return true
+}
+
+export const getDB = async () => getFirestoreInstance()
+
 export const addCategory = async (category) => {
-  const db = await getDB();
-  const tx = db.transaction('categories', 'readwrite');
-  const store = tx.objectStore('categories');
-  category.id = Date.now().toString();
-  category.createdAt = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    const request = store.add(category);
-    request.onsuccess = () => resolve(category);
-    request.onerror = () => reject(request.error);
-  });
-};
+  const id = Date.now().toString()
+  const createdAt = new Date().toISOString()
+  const payload = { ...category, id, createdAt }
+  await writeDoc('categories', id, payload)
+  return payload
+}
 
-export const getCategories = async () => {
-  const db = await getDB();
-  const tx = db.transaction('categories', 'readonly');
-  const store = tx.objectStore('categories');
-  return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-};
+export const getCategories = async () => listFromCollection('categories')
 
 export const updateCategory = async (category) => {
-  const db = await getDB();
-  const tx = db.transaction('categories', 'readwrite');
-  const store = tx.objectStore('categories');
-  return new Promise((resolve, reject) => {
-    const request = store.put(category);
-    request.onsuccess = () => resolve(category);
-    request.onerror = () => reject(request.error);
-  });
-};
+  if (!category?.id) throw new Error('Category id is required')
+  await writeDoc('categories', category.id, category)
+  return category
+}
 
 export const deleteCategory = async (categoryId) => {
-  const db = await getDB();
-  const tx = db.transaction('categories', 'readwrite');
-  const store = tx.objectStore('categories');
-  return new Promise((resolve, reject) => {
-    const request = store.delete(categoryId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};
+  await deleteDocById('categories', categoryId)
+}
 
-// CRUD Operations for Expenses
 export const addExpense = async (expense) => {
-  const db = await getDB();
-  const tx = db.transaction('expenses', 'readwrite');
-  const store = tx.objectStore('expenses');
-  expense.id = Date.now().toString();
-  expense.createdAt = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    const request = store.add(expense);
-    request.onsuccess = () => resolve(expense);
-    request.onerror = () => reject(request.error);
-  });
-};
+  const id = Date.now().toString()
+  const createdAt = new Date().toISOString()
+  const payload = { ...expense, id, createdAt }
+  await writeDoc('expenses', id, payload)
+  return payload
+}
 
-export const getExpenses = async () => {
-  const db = await getDB();
-  const tx = db.transaction('expenses', 'readonly');
-  const store = tx.objectStore('expenses');
-  return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-};
+export const getExpenses = async () => listFromCollection('expenses')
 
 export const updateExpense = async (expense) => {
-  const db = await getDB();
-  const tx = db.transaction('expenses', 'readwrite');
-  const store = tx.objectStore('expenses');
-  return new Promise((resolve, reject) => {
-    const request = store.put(expense);
-    request.onsuccess = () => resolve(expense);
-    request.onerror = () => reject(request.error);
-  });
-};
+  if (!expense?.id) throw new Error('Expense id is required')
+  await writeDoc('expenses', expense.id, expense)
+  return expense
+}
 
 export const deleteExpense = async (expenseId) => {
-  const db = await getDB();
-  const tx = db.transaction('expenses', 'readwrite');
-  const store = tx.objectStore('expenses');
-  return new Promise((resolve, reject) => {
-    const request = store.delete(expenseId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};
+  await deleteDocById('expenses', expenseId)
+}
 
-// CRUD Operations for Milestones
 export const addMilestone = async (milestone) => {
-  const db = await getDB();
-  const tx = db.transaction('milestones', 'readwrite');
-  const store = tx.objectStore('milestones');
-  milestone.id = Date.now().toString();
-  milestone.createdAt = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    const request = store.add(milestone);
-    request.onsuccess = () => resolve(milestone);
-    request.onerror = () => reject(request.error);
-  });
-};
+  const id = Date.now().toString()
+  const createdAt = new Date().toISOString()
+  const payload = { ...milestone, id, createdAt }
+  await writeDoc('milestones', id, payload)
+  return payload
+}
 
-export const getMilestones = async () => {
-  const db = await getDB();
-  const tx = db.transaction('milestones', 'readonly');
-  const store = tx.objectStore('milestones');
-  return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-};
+export const getMilestones = async () => listFromCollection('milestones')
 
 export const deleteMilestone = async (milestoneId) => {
-  const db = await getDB();
-  const tx = db.transaction('milestones', 'readwrite');
-  const store = tx.objectStore('milestones');
-  return new Promise((resolve, reject) => {
-    const request = store.delete(milestoneId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};
+  await deleteDocById('milestones', milestoneId)
+}
 
-// Farm Data (metadata like farm name, location, etc.)
 export const saveFarmData = async (data) => {
-  const db = await getDB();
-  const tx = db.transaction('farmData', 'readwrite');
-  const store = tx.objectStore('farmData');
-  data.key = 'farmMetadata';
-  data.updatedAt = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    const request = store.put(data);
-    request.onsuccess = () => resolve(data);
-    request.onerror = () => reject(request.error);
-  });
-};
+  const user = requireUser()
+  const firestore = getFirestoreInstance()
+  const payload = {
+    ...data,
+    key: 'farmMetadata',
+    updatedAt: new Date().toISOString(),
+  }
+
+  await setDoc(doc(firestore, 'users', user.uid, 'farmData', 'farmMetadata'), payload)
+  return payload
+}
 
 export const getFarmData = async () => {
-  const db = await getDB();
-  const tx = db.transaction('farmData', 'readonly');
-  const store = tx.objectStore('farmData');
-  return new Promise((resolve, reject) => {
-    const request = store.get('farmMetadata');
-    request.onsuccess = () => resolve(request.result || {});
-    request.onerror = () => reject(request.error);
-  });
-};
+  const user = requireUser()
+  const firestore = getFirestoreInstance()
+  const snap = await getDoc(doc(firestore, 'users', user.uid, 'farmData', 'farmMetadata'))
+  if (!snap.exists()) return {}
+  return snap.data() || {}
+}
 
-// CRUD Operations for SubCategories
 export const addSubCategory = async (subcategory) => {
-  const db = await getDB();
-  const tx = db.transaction('subcategories', 'readwrite');
-  const store = tx.objectStore('subcategories');
-  subcategory.id = Date.now().toString();
-  subcategory.createdAt = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    const request = store.add(subcategory);
-    request.onsuccess = () => resolve(subcategory);
-    request.onerror = () => reject(request.error);
-  });
-};
+  const id = subcategory?.id ? subcategory.id : Date.now().toString()
+  const createdAt = new Date().toISOString()
+  const payload = { ...subcategory, id, createdAt }
+  await writeDoc('subcategories', id, payload)
+  return payload
+}
 
-export const getSubCategories = async () => {
-  const db = await getDB();
-  const tx = db.transaction('subcategories', 'readonly');
-  const store = tx.objectStore('subcategories');
-  return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-};
+export const getSubCategories = async () => listFromCollection('subcategories')
 
 export const updateSubCategory = async (subcategory) => {
-  const db = await getDB();
-  const tx = db.transaction('subcategories', 'readwrite');
-  const store = tx.objectStore('subcategories');
-  return new Promise((resolve, reject) => {
-    const request = store.put(subcategory);
-    request.onsuccess = () => resolve(subcategory);
-    request.onerror = () => reject(request.error);
-  });
-};
+  if (!subcategory?.id) throw new Error('Subcategory id is required')
+  await writeDoc('subcategories', subcategory.id, subcategory)
+  return subcategory
+}
 
 export const deleteSubCategory = async (subcategoryId) => {
-  const db = await getDB();
-  const tx = db.transaction('subcategories', 'readwrite');
-  const store = tx.objectStore('subcategories');
-  return new Promise((resolve, reject) => {
-    const request = store.delete(subcategoryId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};
+  await deleteDocById('subcategories', subcategoryId)
+}

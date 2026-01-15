@@ -27,9 +27,9 @@ export default function Categories() {
       setCategories(categoriesData)
       setSubCategories(subcategoriesData)
 
-      const others = subcategoriesData.find(
-        (sc) => sc.name && sc.name.toLowerCase() === 'others'
-      )
+      const others =
+        subcategoriesData.find((sc) => sc.id === 'default-others') ||
+        subcategoriesData.find((sc) => sc.name && sc.name.toLowerCase() === 'others')
       setDefaultOthersId(others ? others.id : null)
     } catch (error) {
       console.error('Error loading data:', error)

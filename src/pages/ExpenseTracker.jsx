@@ -129,7 +129,7 @@ export default function ExpenseTracker() {
   const addSubCategoryEntry = (subCategoryId) => {
     setFormData((prev) => {
       const existing = prev.subCategoryCostEntries?.[subCategoryId] || []
-      const updatedForSub = [...existing, { label: '', amount: '' }]
+      const updatedForSub = [...existing, { label: '', unitPrice: '', quantity: '', amount: '' }]
       return {
         ...prev,
         subCategoryCostEntries: {
@@ -233,12 +233,22 @@ export default function ExpenseTracker() {
     for (const subcatId in subCategoryEntriesMap) {
       const entries = subCategoryEntriesMap[subcatId] || []
       for (const entry of entries) {
-        if (!entry.amount) {
-          alert('Please fill amount for all subcategory entries')
+        const hasAmount = entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
+        const hasUnit = entry.unitPrice !== undefined && entry.unitPrice !== null && entry.unitPrice !== ''
+        const hasQty = entry.quantity !== undefined && entry.quantity !== null && entry.quantity !== ''
+
+        if (!hasAmount && !(hasUnit && hasQty)) {
+          alert('Please fill amount or unit price and quantity for all subcategory entries')
           return
         }
-        if (parseFloat(entry.amount) < 0) {
+
+        if (hasAmount && parseFloat(entry.amount) < 0) {
           alert('Amounts cannot be negative')
+          return
+        }
+
+        if ((hasUnit && parseFloat(entry.unitPrice) < 0) || (hasQty && parseFloat(entry.quantity) < 0)) {
+          alert('Amount and quantity cannot be negative')
           return
         }
       }
@@ -254,7 +264,14 @@ export default function ExpenseTracker() {
     let dynamicOtherCostsTotal = 0
     Object.values(subCategoryEntriesMap).forEach((entries) => {
       entries.forEach((entry) => {
-        dynamicOtherCostsTotal += parseFloat(entry.amount || 0)
+        const hasAmount = entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
+        if (hasAmount) {
+          dynamicOtherCostsTotal += parseFloat(entry.amount || 0)
+          return
+        }
+        const unitPrice = parseFloat(entry.unitPrice || 0)
+        const quantity = parseFloat(entry.quantity || 0)
+        dynamicOtherCostsTotal += unitPrice * quantity
       })
     })
 
@@ -434,8 +451,9 @@ export default function ExpenseTracker() {
       : []
 
   const othersSubcategory = subcategories.find(
-    (sc) => sc.name && sc.name.toLowerCase() === 'others'
+    (sc) => sc.id === 'default-others'
   )
+    || subcategories.find((sc) => sc.name && sc.name.toLowerCase() === 'others')
 
   const selectedSubCategoryIds = othersSubcategory
     ? Array.from(new Set([...baseSubCategoryIds, othersSubcategory.id]))
@@ -742,7 +760,7 @@ export default function ExpenseTracker() {
                             key={index}
                             className="bg-white dark:bg-slate-900 p-3 rounded border border-emerald-200 dark:border-slate-700 transition-colors duration-200"
                           >
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
                               <input
                                 type="text"
                                 placeholder={`Label (optional) for ${subcat.name}`}
@@ -754,15 +772,47 @@ export default function ExpenseTracker() {
                               />
                               <input
                                 type="number"
-                                placeholder="Amount (₹)"
-                                value={entry.amount || ''}
+                                placeholder="Unit Price (₹)"
+                                value={entry.unitPrice || ''}
                                 onChange={(e) =>
-                                  updateSubCategoryEntry(subcat.id, index, 'amount', e.target.value)
+                                  updateSubCategoryEntry(subcat.id, index, 'unitPrice', e.target.value)
                                 }
                                 min="0"
                                 className="px-2 py-1 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-colors duration-200"
                               />
+                              <input
+                                type="number"
+                                placeholder="Quantity"
+                                value={entry.quantity || ''}
+                                onChange={(e) =>
+                                  updateSubCategoryEntry(subcat.id, index, 'quantity', e.target.value)
+                                }
+                                min="0"
+                                className="px-2 py-1 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-colors duration-200"
+                              />
+                              <input
+                                type="number"
+                                value={
+                                  entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
+                                    ? entry.amount
+                                    : entry.unitPrice && entry.quantity
+                                      ? entry.unitPrice * entry.quantity
+                                      : ''
+                                }
+                                disabled
+                                className="px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 font-semibold"
+                              />
                               <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  placeholder="Override Amount (₹)"
+                                  value={entry.amount || ''}
+                                  onChange={(e) =>
+                                    updateSubCategoryEntry(subcat.id, index, 'amount', e.target.value)
+                                  }
+                                  min="0"
+                                  className="px-2 py-1 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-colors duration-200 flex-1"
+                                />
                                 <button
                                   type="button"
                                   onClick={() => removeSubCategoryEntry(subcat.id, index)}
@@ -995,9 +1045,13 @@ export default function ExpenseTracker() {
                             ([subcatId, entries]) => {
                               const subcat = subcategories.find((sc) => sc.id === subcatId)
                               const subcatName = subcat ? subcat.name : 'Other'
-                              const validEntries = (entries || []).filter((entry) =>
-                                parseFloat(entry.amount || 0)
-                              )
+                              const validEntries = (entries || []).filter((entry) => {
+                                const hasAmount = entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
+                                if (hasAmount) return parseFloat(entry.amount || 0)
+                                const unitPrice = parseFloat(entry.unitPrice || 0)
+                                const quantity = parseFloat(entry.quantity || 0)
+                                return unitPrice * quantity
+                              })
                               if (validEntries.length === 0) return null
                               return (
                                 <div key={subcatId} className="mb-1">
@@ -1005,14 +1059,19 @@ export default function ExpenseTracker() {
                                     {subcatName}:
                                   </p>
                                   {validEntries.map((entry, idx) => {
-                                    const entryAmount = parseFloat(entry.amount || 0)
+                                    const hasAmount = entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
+                                    const entryAmount = hasAmount
+                                      ? parseFloat(entry.amount || 0)
+                                      : parseFloat(entry.unitPrice || 0) * parseFloat(entry.quantity || 0)
                                     return (
                                       <p
                                         key={idx}
                                         className="text-[11px] text-slate-700 dark:text-slate-300 transition-colors duration-200"
                                       >
                                         {entry.label ? `${entry.label}: ` : ''}
-                                        ₹{entryAmount.toLocaleString('en-IN')}
+                                        {hasAmount
+                                          ? `₹${entryAmount.toLocaleString('en-IN')}`
+                                          : `${entry.quantity || 0} × ₹${entry.unitPrice || 0} = ₹${entryAmount.toLocaleString('en-IN')}`}
                                       </p>
                                     )
                                   })}

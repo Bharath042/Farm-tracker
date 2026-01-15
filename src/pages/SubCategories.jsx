@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { getSubCategories, addSubCategory, updateSubCategory, deleteSubCategory } from '../db'
 
+const DEFAULT_OTHERS_SUBCATEGORY_ID = 'default-others'
+
 export default function SubCategories() {
   const [subcategories, setSubCategories] = useState([])
   const [showForm, setShowForm] = useState(false)
@@ -17,23 +19,30 @@ export default function SubCategories() {
 
   const loadSubCategories = async () => {
     try {
-      const data = await getSubCategories()
+      let data = await getSubCategories()
 
-      // Ensure a default 'Others' subcategory exists (case-insensitive check)
-      const hasOthers = data.some(
-        (sc) => sc.name && sc.name.toLowerCase() === 'others'
-      )
+      const defaultOthersInDb = data.find((sc) => sc.id === DEFAULT_OTHERS_SUBCATEGORY_ID)
+      const othersByName = data.filter((sc) => sc.name && sc.name.toLowerCase() === 'others')
 
-      if (!hasOthers) {
+      if (!defaultOthersInDb) {
         const defaultOthers = {
+          id: DEFAULT_OTHERS_SUBCATEGORY_ID,
           name: 'Others',
           description: 'Miscellaneous expenses that do not fit into other subcategories',
         }
-        const created = await addSubCategory(defaultOthers)
-        setSubCategories([...data, created])
-      } else {
-        setSubCategories(data)
+        await addSubCategory(defaultOthers)
+        data = await getSubCategories()
       }
+
+      const duplicates = othersByName.filter((sc) => sc.id !== DEFAULT_OTHERS_SUBCATEGORY_ID)
+      if (duplicates.length > 0) {
+        for (const dup of duplicates) {
+          await deleteSubCategory(dup.id)
+        }
+        data = await getSubCategories()
+      }
+
+      setSubCategories(data)
     } catch (error) {
       console.error('Error loading subcategories:', error)
     } finally {
@@ -72,7 +81,7 @@ export default function SubCategories() {
 
   const handleDelete = async (id) => {
     const subcat = subcategories.find((sc) => sc.id === id)
-    if (subcat && subcat.name && subcat.name.toLowerCase() === 'others') {
+    if (subcat && subcat.id === DEFAULT_OTHERS_SUBCATEGORY_ID) {
       alert('The default "Others" subcategory cannot be deleted')
       return
     }
