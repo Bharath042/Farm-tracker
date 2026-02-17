@@ -1039,7 +1039,16 @@ export default function ExpenseTracker() {
 
                       {/* Other Costs */}
                       {expense.subCategoryCostEntries &&
-                      Object.keys(expense.subCategoryCostEntries).length > 0 ? (
+                      Object.keys(expense.subCategoryCostEntries).length > 0 &&
+                      Object.values(expense.subCategoryCostEntries).some(entries => 
+                        entries && entries.length > 0 && entries.some(entry => {
+                          const hasAmount = entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
+                          if (hasAmount) return parseFloat(entry.amount || 0) > 0
+                          const unitPrice = parseFloat(entry.unitPrice || 0)
+                          const quantity = parseFloat(entry.quantity || 0)
+                          return unitPrice * quantity > 0
+                        })
+                      ) ? (
                         <div className="mt-2 pl-4 border-l-2 border-red-400">
                           {Object.entries(expense.subCategoryCostEntries).map(
                             ([subcatId, entries]) => {
@@ -1047,10 +1056,10 @@ export default function ExpenseTracker() {
                               const subcatName = subcat ? subcat.name : 'Other'
                               const validEntries = (entries || []).filter((entry) => {
                                 const hasAmount = entry.amount !== undefined && entry.amount !== null && entry.amount !== ''
-                                if (hasAmount) return parseFloat(entry.amount || 0)
+                                if (hasAmount) return parseFloat(entry.amount || 0) > 0
                                 const unitPrice = parseFloat(entry.unitPrice || 0)
                                 const quantity = parseFloat(entry.quantity || 0)
-                                return unitPrice * quantity
+                                return unitPrice * quantity > 0
                               })
                               if (validEntries.length === 0) return null
                               return (
@@ -1081,7 +1090,7 @@ export default function ExpenseTracker() {
                           )}
                         </div>
                       ) : (
-                        expense.otherCosts && (
+                        expense.otherCosts && parseFloat(expense.otherCosts) > 0 && (
                           <div className="mt-2 pl-4 border-l-2 border-red-400">
                             <p className="text-xs font-semibold text-red-700 dark:text-red-400 transition-colors duration-200">
                               💵 Other: ₹{parseFloat(expense.otherCosts).toLocaleString('en-IN')}
