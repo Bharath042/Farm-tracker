@@ -55,6 +55,16 @@ export default function Analytics() {
     let total = 0
     const distribution = {}
 
+    // Debug: Log the expense structure to understand the issue
+    console.log('Processing expense:', {
+      id: expense.id,
+      itemName: expense.itemName,
+      subCategoryCostEntries: expense.subCategoryCostEntries,
+      otherCosts: expense.otherCosts,
+      labourEntries: expense.labourEntries,
+      materialEntries: expense.materialEntries
+    })
+
     // Labour entries → Labour subcategory
     let labourTotal = 0
     if (expense.labourEntries && Array.isArray(expense.labourEntries)) {
@@ -103,6 +113,7 @@ export default function Analytics() {
     // Dynamic per-subcategory cost entries (Transport, Food, Others, etc.)
     let dynamicOtherTotal = 0
     const subMap = expense.subCategoryCostEntries || {}
+    console.log('SubCategoryCostEntries map:', subMap)
     Object.entries(subMap).forEach(([subcatId, entries]) => {
       let subtotal = 0
       ;(entries || []).forEach((entry) => {
@@ -111,6 +122,7 @@ export default function Analytics() {
         subtotal += val
       })
       if (subtotal > 0) {
+        console.log(`Adding ${subtotal} to subcategory ${subcatId}`)
         distribution[subcatId] = (distribution[subcatId] || 0) + subtotal
         dynamicOtherTotal += subtotal
       }
@@ -135,6 +147,7 @@ export default function Analytics() {
       total += plainOtherToAssign
     }
 
+    console.log('Final distribution for this expense:', distribution)
     return { total, distribution }
   }
 
