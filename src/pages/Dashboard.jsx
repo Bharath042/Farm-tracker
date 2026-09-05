@@ -31,7 +31,7 @@ export default function Dashboard({ onNavigate }) {
         setExpenseCount(expenses.length)
 
         let labour = 0
-        let materials = 0
+        let treeSampling = 0
         let other = 0
 
         expenses.forEach((exp) => {
@@ -44,23 +44,23 @@ export default function Dashboard({ onNavigate }) {
               expenseTotal += cost
             })
           }
-          if (exp.materialEntries && Array.isArray(exp.materialEntries)) {
-            exp.materialEntries.forEach((entry) => {
-              const cost = parseFloat(entry.unitPrice || 0) * parseFloat(entry.quantity || 0)
-              materials += cost
-              expenseTotal += cost
-            })
-          }
           
-          // Calculate subCategoryCostEntries total (dynamic entries like Tractor, Transport, Food, etc.)
+          // Calculate subCategoryCostEntries total and separate Tree Sampling
           let dynamicOtherTotal = 0
           if (exp.subCategoryCostEntries) {
-            Object.values(exp.subCategoryCostEntries).forEach((entries) => {
+            Object.entries(exp.subCategoryCostEntries).forEach(([subcatId, entries]) => {
               if (Array.isArray(entries)) {
+                const subcat = subcategoriesData.find((sc) => sc.id === subcatId)
+                const isTreeSampling = subcat?.name?.toLowerCase().includes('tree') || subcat?.name?.toLowerCase().includes('sampling')
+                
                 entries.forEach((entry) => {
                   const cost = parseFloat(entry.amount || 0)
                   if (cost > 0) {
-                    dynamicOtherTotal += cost
+                    if (isTreeSampling) {
+                      treeSampling += cost
+                    } else {
+                      dynamicOtherTotal += cost
+                    }
                     expenseTotal += cost
                   }
                 })
@@ -91,16 +91,16 @@ export default function Dashboard({ onNavigate }) {
             }
           }
           
-          // Add the dynamicOtherTotal to other (this is the subCategoryCostEntries amount)
+          // Add the dynamicOtherTotal to other (this is the subCategoryCostEntries amount excluding Tree Sampling)
           other += dynamicOtherTotal
         })
 
-        const total = labour + materials + other
+        const total = labour + treeSampling + other
         setTotalExpenses(total)
         setTotalLabour(labour)
-        setTotalMaterials(materials)
+        setTotalMaterials(treeSampling)
 
-        animateValues(total, labour, materials)
+        animateValues(total, labour, treeSampling)
 
         const recent = expenses
           .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -191,11 +191,11 @@ export default function Dashboard({ onNavigate }) {
             </div>
           </div>
 
-          {/* Materials Cost */}
+          {/* Tree Sampling Cost */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-blue-200 dark:border-blue-800 p-8 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide transition-colors duration-200">Materials Cost</p>
+                <p className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide transition-colors duration-200">Tree Sampling Cost</p>
                 <p className="text-4xl font-bold text-slate-900 dark:text-white mt-4 transition-colors duration-200">₹{animatedValues.materials.toLocaleString('en-IN')}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{animatedValues.expenses > 0 ? ((animatedValues.materials / animatedValues.expenses) * 100).toFixed(1) : 0}% of total</p>
               </div>
