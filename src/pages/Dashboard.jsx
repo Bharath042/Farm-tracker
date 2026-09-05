@@ -174,7 +174,7 @@ export default function Dashboard({ onNavigate }) {
               <div>
                 <p className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide transition-colors duration-200">Labour Cost</p>
                 <p className="text-4xl font-bold text-slate-900 dark:text-white mt-4 transition-colors duration-200">₹{animatedValues.labour.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{((animatedValues.labour / animatedValues.expenses) * 100 || 0).toFixed(0)}% of total</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{animatedValues.expenses > 0 ? ((animatedValues.labour / animatedValues.expenses) * 100).toFixed(1) : 0}% of total</p>
               </div>
               <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-lg">👷</div>
             </div>
@@ -186,7 +186,7 @@ export default function Dashboard({ onNavigate }) {
               <div>
                 <p className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide transition-colors duration-200">Materials Cost</p>
                 <p className="text-4xl font-bold text-slate-900 dark:text-white mt-4 transition-colors duration-200">₹{animatedValues.materials.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{((animatedValues.materials / animatedValues.expenses) * 100 || 0).toFixed(0)}% of total</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{animatedValues.expenses > 0 ? ((animatedValues.materials / animatedValues.expenses) * 100).toFixed(1) : 0}% of total</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-lg">📦</div>
             </div>
