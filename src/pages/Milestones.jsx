@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { getMilestones, addMilestone, deleteMilestone } from '../db'
+import { getMilestones, addMilestone, deleteMilestone, updateMilestone } from '../db'
 
 export default function Milestones() {
   const [milestones, setMilestones] = useState([])
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     title: '',
@@ -34,7 +35,11 @@ export default function Milestones() {
     }
 
     try {
-      await addMilestone(formData)
+      if (editingId) {
+        await updateMilestone({ ...formData, id: editingId })
+      } else {
+        await addMilestone(formData)
+      }
       await loadMilestones()
       setFormData({
         date: new Date().toISOString().split('T')[0],
@@ -42,6 +47,7 @@ export default function Milestones() {
         description: '',
       })
       setShowForm(false)
+      setEditingId(null)
     } catch (error) {
       console.error('Error saving milestone:', error)
       alert('Failed to save milestone')
@@ -60,6 +66,16 @@ export default function Milestones() {
     }
   }
 
+  const handleEdit = (milestone) => {
+    setFormData({
+      date: milestone.date,
+      title: milestone.title,
+      description: milestone.description || '',
+    })
+    setEditingId(milestone.id)
+    setShowForm(true)
+  }
+
   const handleCancel = () => {
     setFormData({
       date: new Date().toISOString().split('T')[0],
@@ -67,6 +83,7 @@ export default function Milestones() {
       description: '',
     })
     setShowForm(false)
+    setEditingId(null)
   }
 
   const sortedMilestones = [...milestones].sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -101,7 +118,9 @@ export default function Milestones() {
       {/* Form */}
       {showForm && (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border-2 border-emerald-200 dark:border-emerald-800 transition-colors duration-200">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors duration-200">New Milestone</h3>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors duration-200">
+            {editingId ? 'Edit Milestone' : 'New Milestone'}
+          </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -148,7 +167,7 @@ export default function Milestones() {
                 type="submit"
                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
               >
-                Add Milestone
+                {editingId ? 'Update Milestone' : 'Add Milestone'}
               </button>
               <button
                 type="button"
@@ -198,12 +217,22 @@ export default function Milestones() {
                         })}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleDelete(milestone.id)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                    >
-                      🗑️
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(milestone)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(milestone.id)}
+                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
 
                   {milestone.description && (

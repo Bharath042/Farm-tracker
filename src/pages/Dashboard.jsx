@@ -56,6 +56,20 @@ export default function Dashboard({ onNavigate }) {
             other += cost
             expenseTotal += cost
           }
+          // Include subCategoryCostEntries (dynamic entries like Tractor, Transport, Food, etc.)
+          if (exp.subCategoryCostEntries) {
+            Object.values(exp.subCategoryCostEntries).forEach((entries) => {
+              if (Array.isArray(entries)) {
+                entries.forEach((entry) => {
+                  const cost = parseFloat(entry.amount || 0)
+                  if (cost > 0) {
+                    other += cost
+                    expenseTotal += cost
+                  }
+                })
+              }
+            })
+          }
         })
 
         const total = labour + materials + other
@@ -242,6 +256,16 @@ export default function Dashboard({ onNavigate }) {
                 }
                 if (expense.otherCosts) {
                   amount += parseFloat(expense.otherCosts)
+                }
+                // Include subCategoryCostEntries
+                if (expense.subCategoryCostEntries) {
+                  Object.values(expense.subCategoryCostEntries).forEach((entries) => {
+                    if (Array.isArray(entries)) {
+                      entries.forEach((entry) => {
+                        amount += parseFloat(entry.amount || 0)
+                      })
+                    }
+                  })
                 }
 
                 const categoryName = expense.categoryName || 'Unknown'

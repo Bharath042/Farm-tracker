@@ -100,6 +100,15 @@ export const addMilestone = async (milestone) => {
   return payload
 }
 
+export const updateMilestone = async (milestone) => {
+  const { id, ...data } = milestone
+  if (!id) throw new Error('Milestone ID is required for update')
+  const updatedAt = new Date().toISOString()
+  const payload = { ...data, id, updatedAt }
+  await writeDoc('milestones', id, payload)
+  return payload
+}
+
 export const getMilestones = async () => listFromCollection('milestones')
 
 export const deleteMilestone = async (milestoneId) => {
