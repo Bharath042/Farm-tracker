@@ -25,6 +25,16 @@ export default function Navigation({ currentPage, onPageChange, isDarkMode, onTh
     setShowCategoryMenu(false)
   }
 
+  const handleCategoryMenuClick = () => {
+    setShowCategoryMenu(!showCategoryMenu)
+    setShowMobileMenu(false)
+  }
+
+  const handleMobileMenuClick = () => {
+    setShowMobileMenu(!showMobileMenu)
+    setShowCategoryMenu(false)
+  }
+
   return (
     <>
       {/* Navigation Bar - Desktop & Mobile */}
@@ -37,7 +47,7 @@ export default function Navigation({ currentPage, onPageChange, isDarkMode, onTh
               <h1 className="text-xl font-bold text-emerald-700 dark:text-emerald-400 transition-colors duration-200">Farm Tracker</h1>
             </div>
             
-            {/* Right: Navigation Items (Desktop) + Theme Toggle (All) */}
+            {/* Right: Navigation Items (Desktop) + Theme Toggle (All) + Sign Out (Mobile) */}
             <div className="flex gap-2 items-center">
               {/* Desktop Navigation */}
               <div className="hidden md:flex gap-1 items-center">
@@ -64,6 +74,17 @@ export default function Navigation({ currentPage, onPageChange, isDarkMode, onTh
                   title={userEmail}
                 >
                   Sign out
+                </button>
+              )}
+              
+              {/* Sign Out Button - Mobile Only */}
+              {userEmail && onSignOut && (
+                <button
+                  onClick={onSignOut}
+                  className="md:hidden px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition-colors duration-200"
+                  title="Sign out"
+                >
+                  🚪
                 </button>
               )}
               
@@ -102,7 +123,7 @@ export default function Navigation({ currentPage, onPageChange, isDarkMode, onTh
           {/* Category/SubCategory combined button */}
           <div className="relative flex-1">
             <button
-              onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+              onClick={handleCategoryMenuClick}
               className={`flex flex-col items-center justify-center gap-1 py-2 px-3 transition-colors w-full ${
                 currentPage === 'categories' || currentPage === 'subcategories'
                   ? 'text-emerald-600 dark:text-emerald-400 border-t-2 border-emerald-600 dark:border-emerald-400'
@@ -137,7 +158,7 @@ export default function Navigation({ currentPage, onPageChange, isDarkMode, onTh
           {/* More button */}
           <div className="relative flex-1">
             <button
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              onClick={handleMobileMenuClick}
               className={`flex flex-col items-center justify-center gap-1 py-2 px-3 transition-colors w-full ${
                 currentPage === 'analytics' || currentPage === 'milestones'
                   ? 'text-emerald-600 dark:text-emerald-400 border-t-2 border-emerald-600 dark:border-emerald-400'
