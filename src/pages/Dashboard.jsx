@@ -31,7 +31,7 @@ export default function Dashboard({ onNavigate }) {
         setExpenseCount(expenses.length)
 
         let labour = 0
-        let treeSampling = 0
+        let materials = 0
         let other = 0
 
         expenses.forEach((exp) => {
@@ -44,63 +44,26 @@ export default function Dashboard({ onNavigate }) {
               expenseTotal += cost
             })
           }
-          
-          // Calculate subCategoryCostEntries total and separate Tree Sampling
-          let dynamicOtherTotal = 0
-          if (exp.subCategoryCostEntries) {
-            Object.entries(exp.subCategoryCostEntries).forEach(([subcatId, entries]) => {
-              if (Array.isArray(entries)) {
-                const subcat = subcategoriesData.find((sc) => sc.id === subcatId)
-                const isTreeSampling = subcat?.name?.toLowerCase().includes('tree') || subcat?.name?.toLowerCase().includes('sampling')
-                
-                entries.forEach((entry) => {
-                  const cost = parseFloat(entry.amount || 0)
-                  if (cost > 0) {
-                    if (isTreeSampling) {
-                      treeSampling += cost
-                    } else {
-                      dynamicOtherTotal += cost
-                    }
-                    expenseTotal += cost
-                  }
-                })
-              }
+          if (exp.materialEntries && Array.isArray(exp.materialEntries)) {
+            exp.materialEntries.forEach((entry) => {
+              const cost = parseFloat(entry.unitPrice || 0) * parseFloat(entry.quantity || 0)
+              materials += cost
+              expenseTotal += cost
             })
           }
-          
-          // Add otherCosts, but avoid double-counting if subCategoryCostEntries already includes it
           if (exp.otherCosts) {
-            const totalOtherCosts = parseFloat(exp.otherCosts) || 0
-            const plainOtherToAssign = dynamicOtherTotal > 0
-              ? Math.max(totalOtherCosts - dynamicOtherTotal, 0)
-              : totalOtherCosts
-            if (plainOtherToAssign > 0) {
-              other += plainOtherToAssign
-              expenseTotal += plainOtherToAssign
-            }
-            // Debug: Log when both exist
-            if (dynamicOtherTotal > 0 && totalOtherCosts > 0) {
-              console.log('Expense with both otherCosts and subCategoryCostEntries:', {
-                id: exp.id,
-                itemName: exp.itemName,
-                date: exp.date,
-                otherCosts: totalOtherCosts,
-                dynamicOtherTotal: dynamicOtherTotal,
-                plainOtherToAssign: plainOtherToAssign
-              })
-            }
+            const cost = parseFloat(exp.otherCosts)
+            other += cost
+            expenseTotal += cost
           }
-          
-          // Add the dynamicOtherTotal to other (this is the subCategoryCostEntries amount excluding Tree Sampling)
-          other += dynamicOtherTotal
         })
 
-        const total = labour + treeSampling + other
+        const total = labour + materials + other
         setTotalExpenses(total)
         setTotalLabour(labour)
-        setTotalMaterials(treeSampling)
+        setTotalMaterials(materials)
 
-        animateValues(total, labour, treeSampling)
+        animateValues(total, labour, materials)
 
         const recent = expenses
           .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -185,19 +148,19 @@ export default function Dashboard({ onNavigate }) {
               <div>
                 <p className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide transition-colors duration-200">Labour Cost</p>
                 <p className="text-4xl font-bold text-slate-900 dark:text-white mt-4 transition-colors duration-200">₹{animatedValues.labour.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{animatedValues.expenses > 0 ? ((animatedValues.labour / animatedValues.expenses) * 100).toFixed(1) : 0}% of total</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{((animatedValues.labour / animatedValues.expenses) * 100 || 0).toFixed(0)}% of total</p>
               </div>
               <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-lg">👷</div>
             </div>
           </div>
 
-          {/* Tree Sampling Cost */}
+          {/* Materials Cost */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-blue-200 dark:border-blue-800 p-8 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide transition-colors duration-200">Tree Sampling Cost</p>
+                <p className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide transition-colors duration-200">Materials Cost</p>
                 <p className="text-4xl font-bold text-slate-900 dark:text-white mt-4 transition-colors duration-200">₹{animatedValues.materials.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{animatedValues.expenses > 0 ? ((animatedValues.materials / animatedValues.expenses) * 100).toFixed(1) : 0}% of total</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-200">{((animatedValues.materials / animatedValues.expenses) * 100 || 0).toFixed(0)}% of total</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-lg">📦</div>
             </div>
@@ -277,30 +240,9 @@ export default function Dashboard({ onNavigate }) {
                     amount += parseFloat(entry.unitPrice || 0) * parseFloat(entry.quantity || 0)
                   })
                 }
-                
-                // Calculate subCategoryCostEntries total
-                let dynamicOtherTotal = 0
-                if (expense.subCategoryCostEntries) {
-                  Object.values(expense.subCategoryCostEntries).forEach((entries) => {
-                    if (Array.isArray(entries)) {
-                      entries.forEach((entry) => {
-                        dynamicOtherTotal += parseFloat(entry.amount || 0)
-                      })
-                    }
-                  })
-                }
-                
-                // Add otherCosts, avoiding double-counting
                 if (expense.otherCosts) {
-                  const totalOtherCosts = parseFloat(expense.otherCosts) || 0
-                  const plainOtherToAssign = dynamicOtherTotal > 0
-                    ? Math.max(totalOtherCosts - dynamicOtherTotal, 0)
-                    : totalOtherCosts
-                  amount += plainOtherToAssign
+                  amount += parseFloat(expense.otherCosts)
                 }
-                
-                // Add dynamicOtherTotal
-                amount += dynamicOtherTotal
 
                 const categoryName = expense.categoryName || 'Unknown'
                 const borderColors = ['border-emerald-200', 'border-blue-200', 'border-amber-200', 'border-teal-200', 'border-cyan-200']
