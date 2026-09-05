@@ -181,6 +181,19 @@ function App() {
             >
               {authMode === 'signup' ? 'Create account' : 'Sign in'}
             </button>
+
+            {authMode === 'signin' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthEmail('durairaj32@gmail.com')
+                  setAuthPassword('Bharath@123')
+                }}
+                className="w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium"
+              >
+                Auto-fill Credentials
+              </button>
+            )}
           </form>
 
           <div className="mt-4 text-sm text-slate-700 dark:text-slate-300">
