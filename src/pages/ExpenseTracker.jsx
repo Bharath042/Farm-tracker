@@ -389,27 +389,29 @@ export default function ExpenseTracker() {
   }
 
   const getFilteredExpenses = () => {
-    return expenses.filter((expense) => {
-      const categoryMatch = filterCategory === 'all' || expense.category === filterCategory
-      const dateFromMatch = !filterDateFrom || new Date(expense.date) >= new Date(filterDateFrom)
-      const dateToMatch = !filterDateTo || new Date(expense.date) <= new Date(filterDateTo)
-      
-      // Search by item name, description, or labour type
-      const searchLower = searchText.toLowerCase()
-      const searchMatch = !searchText || 
-        (expense.itemName && expense.itemName.toLowerCase().includes(searchLower)) ||
-        (expense.description && expense.description.toLowerCase().includes(searchLower)) ||
-        (expense.labourEntries && expense.labourEntries.some(e => e.name.toLowerCase().includes(searchLower))) ||
-        (expense.materialEntries && expense.materialEntries.some(e => e.name.toLowerCase().includes(searchLower))) ||
-        (expense.subCategoryCostEntries &&
-          Object.values(expense.subCategoryCostEntries).some((entries) =>
-            entries.some(
-              (entry) => entry.label && entry.label.toLowerCase().includes(searchLower)
-            )
-          ))
+    return expenses
+      .filter((expense) => {
+        const categoryMatch = filterCategory === 'all' || expense.category === filterCategory
+        const dateFromMatch = !filterDateFrom || new Date(expense.date) >= new Date(filterDateFrom)
+        const dateToMatch = !filterDateTo || new Date(expense.date) <= new Date(filterDateTo)
+        
+        // Search by item name, description, or labour type
+        const searchLower = searchText.toLowerCase()
+        const searchMatch = !searchText || 
+          (expense.itemName && expense.itemName.toLowerCase().includes(searchLower)) ||
+          (expense.description && expense.description.toLowerCase().includes(searchLower)) ||
+          (expense.labourEntries && expense.labourEntries.some(e => e.name.toLowerCase().includes(searchLower))) ||
+          (expense.materialEntries && expense.materialEntries.some(e => e.name.toLowerCase().includes(searchLower))) ||
+          (expense.subCategoryCostEntries &&
+            Object.values(expense.subCategoryCostEntries).some((entries) =>
+              entries.some(
+                (entry) => entry.label && entry.label.toLowerCase().includes(searchLower)
+              )
+            ))
 
-      return categoryMatch && dateFromMatch && dateToMatch && searchMatch
-    })
+        return categoryMatch && dateFromMatch && dateToMatch && searchMatch
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending (latest first)
   }
 
   const calculateLabourTotal = (entries) => {
@@ -623,6 +625,7 @@ export default function ExpenseTracker() {
                             value={entry.quantity}
                             onChange={(e) => updateLabourEntry(index, 'quantity', e.target.value)}
                             min="0"
+                            step="any"
                             className="px-2 py-1 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 transition-colors duration-200"
                           />
                           <div className="flex gap-2">
@@ -694,6 +697,7 @@ export default function ExpenseTracker() {
                             value={entry.quantity}
                             onChange={(e) => updateMaterialEntry(index, 'quantity', e.target.value)}
                             min="0"
+                            step="any"
                             className="px-2 py-1 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 transition-colors duration-200"
                           />
                           <div className="flex gap-2">
@@ -788,6 +792,7 @@ export default function ExpenseTracker() {
                                   updateSubCategoryEntry(subcat.id, index, 'quantity', e.target.value)
                                 }
                                 min="0"
+                                step="any"
                                 className="px-2 py-1 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-colors duration-200"
                               />
                               <input
