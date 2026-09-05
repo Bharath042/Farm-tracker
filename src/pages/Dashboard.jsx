@@ -51,25 +51,37 @@ export default function Dashboard({ onNavigate }) {
               expenseTotal += cost
             })
           }
-          if (exp.otherCosts) {
-            const cost = parseFloat(exp.otherCosts)
-            other += cost
-            expenseTotal += cost
-          }
-          // Include subCategoryCostEntries (dynamic entries like Tractor, Transport, Food, etc.)
+          
+          // Calculate subCategoryCostEntries total (dynamic entries like Tractor, Transport, Food, etc.)
+          let dynamicOtherTotal = 0
           if (exp.subCategoryCostEntries) {
             Object.values(exp.subCategoryCostEntries).forEach((entries) => {
               if (Array.isArray(entries)) {
                 entries.forEach((entry) => {
                   const cost = parseFloat(entry.amount || 0)
                   if (cost > 0) {
-                    other += cost
+                    dynamicOtherTotal += cost
                     expenseTotal += cost
                   }
                 })
               }
             })
           }
+          
+          // Add otherCosts, but avoid double-counting if subCategoryCostEntries already includes it
+          if (exp.otherCosts) {
+            const totalOtherCosts = parseFloat(exp.otherCosts) || 0
+            const plainOtherToAssign = dynamicOtherTotal > 0
+              ? Math.max(totalOtherCosts - dynamicOtherTotal, 0)
+              : totalOtherCosts
+            if (plainOtherToAssign > 0) {
+              other += plainOtherToAssign
+              expenseTotal += plainOtherToAssign
+            }
+          }
+          
+          // Add the dynamicOtherTotal to other (this is the subCategoryCostEntries amount)
+          other += dynamicOtherTotal
         })
 
         const total = labour + materials + other
@@ -254,19 +266,30 @@ export default function Dashboard({ onNavigate }) {
                     amount += parseFloat(entry.unitPrice || 0) * parseFloat(entry.quantity || 0)
                   })
                 }
-                if (expense.otherCosts) {
-                  amount += parseFloat(expense.otherCosts)
-                }
-                // Include subCategoryCostEntries
+                
+                // Calculate subCategoryCostEntries total
+                let dynamicOtherTotal = 0
                 if (expense.subCategoryCostEntries) {
                   Object.values(expense.subCategoryCostEntries).forEach((entries) => {
                     if (Array.isArray(entries)) {
                       entries.forEach((entry) => {
-                        amount += parseFloat(entry.amount || 0)
+                        dynamicOtherTotal += parseFloat(entry.amount || 0)
                       })
                     }
                   })
                 }
+                
+                // Add otherCosts, avoiding double-counting
+                if (expense.otherCosts) {
+                  const totalOtherCosts = parseFloat(expense.otherCosts) || 0
+                  const plainOtherToAssign = dynamicOtherTotal > 0
+                    ? Math.max(totalOtherCosts - dynamicOtherTotal, 0)
+                    : totalOtherCosts
+                  amount += plainOtherToAssign
+                }
+                
+                // Add dynamicOtherTotal
+                amount += dynamicOtherTotal
 
                 const categoryName = expense.categoryName || 'Unknown'
                 const borderColors = ['border-emerald-200', 'border-blue-200', 'border-amber-200', 'border-teal-200', 'border-cyan-200']
