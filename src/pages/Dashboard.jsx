@@ -78,6 +78,17 @@ export default function Dashboard({ onNavigate }) {
               other += plainOtherToAssign
               expenseTotal += plainOtherToAssign
             }
+            // Debug: Log when both exist
+            if (dynamicOtherTotal > 0 && totalOtherCosts > 0) {
+              console.log('Expense with both otherCosts and subCategoryCostEntries:', {
+                id: exp.id,
+                itemName: exp.itemName,
+                date: exp.date,
+                otherCosts: totalOtherCosts,
+                dynamicOtherTotal: dynamicOtherTotal,
+                plainOtherToAssign: plainOtherToAssign
+              })
+            }
           }
           
           // Add the dynamicOtherTotal to other (this is the subCategoryCostEntries amount)
