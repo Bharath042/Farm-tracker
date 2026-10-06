@@ -10,6 +10,7 @@ export default function Dashboard({ onNavigate }) {
   const [farmData, setFarmData] = useState({})
   const [totalLabour, setTotalLabour] = useState(0)
   const [totalMaterials, setTotalMaterials] = useState(0)
+  const [totalDynamicSubcategoryCosts, setTotalDynamicSubcategoryCosts] = useState(0)
   const [loading, setLoading] = useState(true)
   const [animatedValues, setAnimatedValues] = useState({
     expenses: 0,
@@ -33,6 +34,7 @@ export default function Dashboard({ onNavigate }) {
         let labour = 0
         let materials = 0
         let other = 0
+        let dynamicSubcategoryCosts = 0
 
         expenses.forEach((exp) => {
           let expenseTotal = 0
@@ -51,6 +53,20 @@ export default function Dashboard({ onNavigate }) {
               expenseTotal += cost
             })
           }
+          // Dynamic subcategory cost entries (e.g., Tractor, Transport, Food, etc.)
+          if (exp.subCategoryCostEntries && typeof exp.subCategoryCostEntries === 'object') {
+            Object.values(exp.subCategoryCostEntries).forEach((entries) => {
+              if (Array.isArray(entries)) {
+                entries.forEach((entry) => {
+                  const cost = parseFloat(entry.amount || 0)
+                  if (cost > 0) {
+                    dynamicSubcategoryCosts += cost
+                    expenseTotal += cost
+                  }
+                })
+              }
+            })
+          }
           if (exp.otherCosts) {
             const cost = parseFloat(exp.otherCosts)
             other += cost
@@ -58,10 +74,11 @@ export default function Dashboard({ onNavigate }) {
           }
         })
 
-        const total = labour + materials + other
+        const total = labour + materials + other + dynamicSubcategoryCosts
         setTotalExpenses(total)
         setTotalLabour(labour)
         setTotalMaterials(materials)
+        setTotalDynamicSubcategoryCosts(dynamicSubcategoryCosts)
 
         animateValues(total, labour, materials)
 
@@ -238,6 +255,16 @@ export default function Dashboard({ onNavigate }) {
                 if (expense.materialEntries && Array.isArray(expense.materialEntries)) {
                   expense.materialEntries.forEach((entry) => {
                     amount += parseFloat(entry.unitPrice || 0) * parseFloat(entry.quantity || 0)
+                  })
+                }
+                // Dynamic subcategory cost entries
+                if (expense.subCategoryCostEntries && typeof expense.subCategoryCostEntries === 'object') {
+                  Object.values(expense.subCategoryCostEntries).forEach((entries) => {
+                    if (Array.isArray(entries)) {
+                      entries.forEach((entry) => {
+                        amount += parseFloat(entry.amount || 0)
+                      })
+                    }
                   })
                 }
                 if (expense.otherCosts) {
